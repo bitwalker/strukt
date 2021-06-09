@@ -186,6 +186,13 @@ defmodule Strukt do
   end
 
   defp define_struct(_env, name, meta, moduledoc, derives, schema_attrs, fields, body) do
+    # Extract macros which should be defined at the top of the module
+    {macros, body} =
+      Enum.split_with(body, fn
+        {node, _meta, _body} -> node in [:use, :import, :alias]
+        _ -> false
+      end)
+
     # Extract child struct definitions
     children =
       fields
@@ -228,28 +235,13 @@ defmodule Strukt do
       |> Enum.map(fn {type, meta, args} -> {type, meta, Enum.take(args, 3)} end)
 
     # Make sure the default primary key is defined and castable
-    default_primary_key =
-      case Enum.find(fields, &(&1.type == :field and Keyword.has_key?(&1.options, :primary_key))) do
-        nil ->
-          quote do
-            if is_nil(Module.get_attribute(__MODULE__, :primary_key)) do
-              Module.put_attribute(
-                __MODULE__,
-                :primary_key,
-                {:uuid, Ecto.UUID, autogenerate: true}
-              )
-            end
-          end
-
-        %Strukt.Field{} ->
-          quote do
-            @primary_key false
-          end
-      end
+    defines_primary_key? =
+      Enum.any?(fields, &(&1.type == :field and Keyword.has_key?(&1.options, :primary_key)))
 
     quoted =
       quote location: :keep do
         unquote(moduledoc)
+        unquote_splicing(macros)
 
         # Capture schema attributes from outer scope, since `use Ecto.Schema` will reset them
         schema_attrs =
@@ -264,17 +256,32 @@ defmodule Strukt do
         @before_compile unquote(__MODULE__)
 
         # Generate child structs before generating the parent
-        unquote(children)
+        unquote_splicing(children)
 
         # Ensure any schema attributes are set, starting with outer scope, then inner
         for {schema_attr, value} <- schema_attrs do
           Module.put_attribute(__MODULE__, schema_attr, value)
         end
 
-        unquote(schema_attrs)
+        # Schema attributes defined in module body
+        unquote_splicing(schema_attrs)
 
-        # Define the default primary key, if applicable, see use of @primary_key in Ecto.Schema
-        unquote(default_primary_key)
+        # Ensure a primary key is defined, if one hasn't been by this point
+        defines_primary_key? = unquote(defines_primary_key?)
+
+        case Module.get_attribute(__MODULE__, :primary_key) do
+          nil when not defines_primary_key? ->
+            # Provide the default primary key
+            Module.put_attribute(__MODULE__, :primary_key, {:uuid, Ecto.UUID, autogenerate: true})
+
+          pk when defines_primary_key? ->
+            # Primary key is being overridden
+            Module.put_attribute(__MODULE__, :primary_key, false)
+
+          _pk ->
+            # Primary key is set and not overridden
+            nil
+        end
 
         @schema_name Macro.underscore(__MODULE__)
         @validated_fields unquote(validated_fields)

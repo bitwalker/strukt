@@ -105,6 +105,12 @@ defmodule Strukt.Test do
     assert {:ok, ^obj} = Fixtures.OuterAttrs.from_json(json)
   end
 
+  test "usings/imports are scoped correctly when using defstruct/2" do
+    assert {:ok, %Fixtures.OuterScope.InnerScope{} = scope} = Fixtures.OuterScope.InnerScope.new()
+    refute scope.uuid == nil
+    assert %DateTime{} = scope.inserted_at
+  end
+
   test "can express validations inline with field definitions" do
     assert {:error, changeset} = Fixtures.Validations.new()
 

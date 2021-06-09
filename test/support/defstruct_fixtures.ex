@@ -73,6 +73,22 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule OuterScope do
+    # This imports defstruct and sets up shared defaults in the outer scope
+    use Strukt.Test.Macros
+
+    defstruct InnerScope do
+      # Since this is a new module scope, we want to set up defaults
+      # like we did in the outer scope.  If working properly,
+      # this macro should be expanded before the schema definition
+      use Strukt.Test.Macros
+
+      field(:name, :string, default: "")
+
+      timestamps()
+    end
+  end
+
   defstruct Validations do
     @moduledoc "This module uses a variety of validation rules in various combinations"
 
