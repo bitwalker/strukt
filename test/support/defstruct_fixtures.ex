@@ -104,6 +104,12 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defstruct ValidateRequiredEmbed do
+    embeds_one :embedded, Embed, [required: [message: "embed must be set"]] do
+      field(:name, :string, required: true)
+    end
+  end
+
   defstruct ValidateLengths do
     @moduledoc "This module excersizes validations on string length"
 

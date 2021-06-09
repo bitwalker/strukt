@@ -134,6 +134,11 @@ defmodule Strukt.Test do
     assert %{age: ["must be greater than 0"]} = changeset_errors(changeset)
   end
 
+  test "can require that an embed be present" do
+    assert {:error, changeset} = Fixtures.ValidateRequiredEmbed.new()
+    assert %{embedded: ["embed must be set"]} = changeset_errors(changeset)
+  end
+
   test "can correctly validate enums" do
     params = [
       name: "Bobby Tables",

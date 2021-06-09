@@ -59,6 +59,21 @@ defmodule Strukt.Field do
     }
   end
 
+  defp parse(type, meta, [name, value_type, opts, list]) when type in [:embeds_one, :embeds_many] do
+    block = Keyword.fetch!(list, :do)
+    {validations, options} = Keyword.split(opts, @validation_opts)
+
+    %__MODULE__{
+      name: name,
+      type: type,
+      meta: meta,
+      value_type: value_type,
+      block: block,
+      options: options,
+      validations: validations
+    }
+  end
+
   defp parse(:timestamps, meta, args),
     do: %__MODULE__{type: :timestamps, meta: meta, options: args}
 
