@@ -91,7 +91,7 @@ like this:
             :crypto.hash_init(:sha256)
             |> :crypto.hash_update(thing.name)
             |> :crypto.hash_update(thing.email)
-            |> :rypto.hash_final()
+            |> :crypto.hash_final()
             |> Base.encode32()
 
           {:ok, %__MODULE__{thing | uuid: UUID.uuid5(:oid, hash, :default)}}
