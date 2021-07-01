@@ -492,6 +492,35 @@ defmodule Strukt.Test do
     assert %{filename: ["filename must match content type of file"]} = changeset_errors(changeset)
   end
 
+  test "can generate simple type spec and nullable respect default/required setting" do
+    require Fixtures.TypeSpec
+
+    assert inspect(
+             Strukt.Typespec.generate(%Strukt.Typespec{
+               caller: Strukt.Test.Fixtures.TypeSpec,
+               fields: [:required_filed, :optional_field, :default_field, :default_nil_field],
+               info: %{
+                 required_filed: %{type: :any, value_type: :integer, required: true, default: nil},
+                 optional_field: %{
+                   type: :any,
+                   value_type: :integer,
+                   required: false,
+                   default: nil
+                 },
+                 default_field: %{type: :any, value_type: :integer, required: false, default: ""},
+                 default_nil_field: %{
+                   type: :any,
+                   value_type: :integer,
+                   required: false,
+                   default: nil
+                 }
+               },
+               embeds: []
+             })
+           ) ==
+             Fixtures.TypeSpec.expected_type_spec_ast_str()
+  end
+
   defp changeset_errors(%Ecto.Changeset{} = cs) do
     cs
     |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->

@@ -53,7 +53,7 @@ defmodule Strukt.Typespec do
       |> Enum.map(fn {name, meta} ->
         required? = Map.get(meta, :required) == true
         default_value = Map.get(meta, :default)
-        type_name = type_to_type_name(meta.type)
+        type_name = type_to_type_name(meta.value_type)
 
         type_spec =
           if required? or not is_nil(default_value) do

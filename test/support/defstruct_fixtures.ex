@@ -17,6 +17,30 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule TypeSpec do
+    use Strukt
+
+    @primary_key false
+    defstruct do
+      field(:required_filed, :string, required: true)
+      field(:optional_field, :string)
+      field(:default_field, :string, default: "")
+      field(:default_nil_field, :string, default: nil)
+    end
+
+    defmacro expected_type_spec_ast_str do
+      quote context: __MODULE__ do
+        @type t :: %__MODULE__{
+                required_filed: integer(),
+                optional_field: integer() | nil,
+                default_field: integer(),
+                default_nil_field: integer() | nil
+              }
+      end
+      |> inspect()
+    end
+  end
+
   defmodule CustomFields do
     @moduledoc "This module represents the params keys are not snake case"
 
