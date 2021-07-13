@@ -67,7 +67,8 @@ defmodule Strukt do
     :foreign_key_type,
     :timestamps_opts,
     :derive,
-    :field_source_mapper
+    :field_source_mapper,
+    :db_source
   ]
 
   @special_attrs @schema_attrs ++ [:moduledoc, :derives]
@@ -174,7 +175,9 @@ defmodule Strukt do
 
     fields = Strukt.Field.parse(fields)
 
-    define_struct(env, name, meta, moduledoc, derives, schema_attrs, fields, body)
+    db_source = Enum.find(special_attrs, fn {:@, _, [{attr, _, _}]} -> attr == :db_source end)
+
+    define_struct(env, name, meta, moduledoc, derives, schema_attrs, fields, body, db_source)
   end
 
   # This clause handles the edge case where the definition only contains
@@ -182,10 +185,10 @@ defmodule Strukt do
   defp define_struct(env, name, {type, _, _} = field) when is_supported(type) do
     fields = Strukt.Field.parse([field])
 
-    define_struct(env, name, [], nil, [], [], fields, [])
+    define_struct(env, name, [], nil, [], [], fields, [], nil)
   end
 
-  defp define_struct(_env, name, meta, moduledoc, derives, schema_attrs, fields, body) do
+  defp define_struct(_env, name, meta, moduledoc, derives, schema_attrs, fields, body, db_source) do
     # Extract macros which should be defined at the top of the module
     {macros, body} =
       Enum.split_with(body, fn
@@ -331,8 +334,14 @@ defmodule Strukt do
             end
         end
 
-        embedded_schema do
-          unquote({:__block__, meta, fields_ast})
+        if Module.get_attribute(__MODULE__, :db_source) do
+          schema Module.get_attribute(__MODULE__, :db_source) do
+            unquote({:__block__, meta, fields_ast})
+          end
+        else
+          embedded_schema do
+            unquote({:__block__, meta, fields_ast})
+          end
         end
 
         @doc """
