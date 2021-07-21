@@ -349,9 +349,14 @@ defmodule Strukt do
         def new(params \\ %{})
 
         def new(params) do
-          struct(__MODULE__)
-          |> Strukt.Autogenerate.generate()
-          |> changeset(params, :insert)
+          struct =
+            struct(__MODULE__)
+            |> Strukt.Autogenerate.generate()
+
+          formed_params = transform_params(__MODULE__, params, struct)
+
+          struct
+          |> changeset(formed_params, :insert)
           |> from_changeset()
         end
 
@@ -507,6 +512,30 @@ defmodule Strukt do
         do: {:ok, Ecto.Changeset.apply_changes(cs)}
 
       def from_changeset(%Ecto.Changeset{} = cs), do: {:error, cs}
+
+      defp transform_params(_module, params, _struct)
+           when is_map(params) and map_size(params) == 0,
+           do: params
+
+      defp transform_params(module, params, struct) when is_list(params) do
+        for field <- module.__schema__(:fields), into: %{} do
+          source_field_name = module.__schema__(:field_source, field)
+          value = params[source_field_name] || Map.get(struct, field)
+          {field, value}
+        end
+      end
+
+      defp transform_params(module, params, struct) when is_map(params) do
+        for field <- module.__schema__(:fields), into: %{} do
+          source_field_name = module.__schema__(:field_source, field)
+
+          value =
+            Map.get(params, source_field_name) ||
+              Map.get(params, source_field_name |> to_string()) || Map.get(struct, field)
+
+          {field, value}
+        end
+      end
 
       @doc "Deserialize this type from a JSON string or iodata"
       @spec from_json(binary | iodata) :: {:ok, t} | {:error, reason :: term}

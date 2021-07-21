@@ -86,6 +86,19 @@ defmodule Strukt.Test do
     refute id1 == id2
   end
 
+  test "using ecto schema reflection to form a struct" do
+    params = %{NAME: "name", camelCaseKey: "key"}
+
+    assert {
+             :ok,
+             %Strukt.Test.Fixtures.CustomFields{
+               camel_case_key: "key",
+               name: "name",
+               uuid: "551aacdf-8dc0-47ac-8a0c-dd90701cf1e8"
+             }
+           } = Fixtures.CustomFields.new(params)
+  end
+
   test "can derive a json encoder" do
     assert {:ok, %Fixtures.JSON{} = obj} = Fixtures.JSON.new()
 
