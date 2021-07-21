@@ -17,6 +17,17 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule CustomFields do
+    @moduledoc "This module represents the params keys are not snake case"
+
+    use Strukt
+
+    defstruct do
+      field(:name, :string, source: :NAME)
+      field(:camel_case_key, :string, source: :camelCaseKey)
+    end
+  end
+
   defstruct Inline do
     @moduledoc "This module represents the simplest possible use of defstruct/2, i.e. inline definition of a struct and its module"
 
