@@ -537,6 +537,12 @@ defmodule Strukt do
         transform_params(module, params, struct)
       end
 
+      defp transform_params(module, params, nil = struct, cardinality: :many) do
+        Enum.with_index(params, fn param, index ->
+          transform_params(module, param, struct)
+        end)
+      end
+
       defp transform_params(module, params, struct, cardinality: :many) do
         Enum.with_index(params, fn param, index ->
           transform_params(module, param, Enum.at(struct, index))
@@ -568,10 +574,13 @@ defmodule Strukt do
       end
 
       defp get_params_field_value(params, field, struct) when is_map(params) do
-        case Map.get(params, field) ||
-               Map.get(params, field |> to_string()) do
-          nil -> get_struct_field_value(struct, field)
-          value -> value
+        atom_key_value = Map.get(params, field)
+        string_key_value = Map.get(params, field |> to_string())
+
+        case {atom_key_value, string_key_value} do
+          {nil, nil} -> get_struct_field_value(struct, field)
+          {atom_key_value, nil} -> atom_key_value
+          {nil, string_key_value} -> string_key_value
         end
       end
 

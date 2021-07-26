@@ -99,33 +99,55 @@ defmodule Strukt.Test do
            } = Fixtures.CustomFields.new(params)
   end
 
-
   test "can parse custom fields for embedded schema" do
-    params = %{NAME: "embedded", items: [%{itemName: "first item"}, %{itemName: "second item"}], meta: %{SOURCE: "iOS", Status: 1}}
+    params = %{
+      NAME: "embedded",
+      items: [%{itemName: "first item"}, %{itemName: "second item"}],
+      meta: %{SOURCE: "iOS", Status: 1}
+    }
 
     assert {:ok,
-    %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
-      items: [
-        %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
-          name: "first item",
-          uuid: nil
-        },
-        %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
-          name: "second item",
-          uuid: nil
-        }
-      ],
-      meta: %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Meta{
-        source: "iOS",
-        status: 1,
-        uuid: nil
-      },
-      name: "embedded",
-      uuid: uuid
-    }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params)
+            %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
+              items: [
+                %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
+                  name: "first item",
+                  uuid: nil
+                },
+                %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
+                  name: "second item",
+                  uuid: nil
+                }
+              ],
+              meta: %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Meta{
+                source: "iOS",
+                status: 1,
+                uuid: nil
+              },
+              name: "embedded",
+              uuid: uuid
+            }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params)
+
     refute is_nil(uuid)
   end
 
+  test "parse custom fields with empry params" do
+    assert {:ok,
+            %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
+              items: [],
+              meta: nil,
+              name: nil,
+              uuid: uuid
+            }} = Fixtures.CustomFieldsWithEmbeddedSchema.new()
+
+    refute is_nil(uuid)
+  end
+
+  test "parse custom fields with boolean value" do
+    assert {:ok, %Strukt.Test.Fixtures.CustomFieldsWithBoolean{enabled: false, uuid: uuid}} =
+             Fixtures.CustomFieldsWithBoolean.new(%{Enabled: false})
+
+    refute is_nil(uuid)
+  end
 
   test "can derive a json encoder" do
     assert {:ok, %Fixtures.JSON{} = obj} = Fixtures.JSON.new()

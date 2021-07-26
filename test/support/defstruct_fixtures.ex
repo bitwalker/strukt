@@ -28,6 +28,16 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule CustomFieldsWithBoolean do
+    @moduledoc "This module represents the params keys are not snake case with boolean value"
+
+    use Strukt
+
+    defstruct do
+      field(:enabled, :boolean, source: :Enabled)
+    end
+  end
+
   defmodule CustomFieldsWithEmbeddedSchema do
     @moduledoc "This module shows the struct with embedded schema that have custom keys"
 
@@ -35,9 +45,11 @@ defmodule Strukt.Test.Fixtures do
 
     defstruct do
       field(:name, :string, source: :NAME)
+
       embeds_many :items, Item do
         field(:name, :string, source: :itemName)
       end
+
       embeds_one :meta, Meta do
         field(:source, :string, source: :SOURCE)
         field(:status, :integer, source: :Status)
@@ -133,7 +145,7 @@ defmodule Strukt.Test.Fixtures do
   end
 
   defstruct ValidateRequiredEmbed do
-    embeds_one :embedded, Embed, [required: [message: "embed must be set"]] do
+    embeds_one :embedded, Embed, required: [message: "embed must be set"] do
       field(:name, :string, required: true)
     end
   end
