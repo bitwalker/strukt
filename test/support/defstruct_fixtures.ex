@@ -28,6 +28,23 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule CustomFieldsWithEmbeddedSchema do
+    @moduledoc "This module shows the struct with embedded schema that have custom keys"
+
+    use Strukt
+
+    defstruct do
+      field(:name, :string, source: :NAME)
+      embeds_many :items, Item do
+        field(:name, :string, source: :itemName)
+      end
+      embeds_one :meta, Meta do
+        field(:source, :string, source: :SOURCE)
+        field(:status, :integer, source: :Status)
+      end
+    end
+  end
+
   defstruct Inline do
     @moduledoc "This module represents the simplest possible use of defstruct/2, i.e. inline definition of a struct and its module"
 
