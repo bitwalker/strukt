@@ -518,7 +518,7 @@ defmodule Strukt do
       defp transform_params(module, params, struct) when is_list(params) do
         for field <- module.__schema__(:fields), into: %{} do
           source_field_name = module.__schema__(:field_source, field)
-          value = params[source_field_name] || get_struct_field_value(struct, field)
+          value = get_params_field_value(params, source_field_name, struct)
           map_value_to_field(module, field, value, struct)
         end
       end
@@ -526,12 +526,7 @@ defmodule Strukt do
       defp transform_params(module, params, struct) when is_map(params) do
         for field <- module.__schema__(:fields), into: %{} do
           source_field_name = module.__schema__(:field_source, field)
-
-          value =
-            Map.get(params, source_field_name) ||
-              Map.get(params, source_field_name |> to_string()) ||
-              get_struct_field_value(struct, field)
-
+          value = get_params_field_value(params, source_field_name, struct)
           map_value_to_field(module, field, value, struct)
         end
       end
@@ -562,6 +557,21 @@ defmodule Strukt do
 
           _type ->
             {field, value}
+        end
+      end
+
+      defp get_params_field_value(params, field, struct) when is_list(params) do
+        case params[field] do
+          nil -> get_struct_field_value(struct, field)
+          value -> value
+        end
+      end
+
+      defp get_params_field_value(params, field, struct) when is_map(params) do
+        case Map.get(params, field) ||
+               Map.get(params, field |> to_string()) do
+          nil -> get_struct_field_value(struct, field)
+          value -> value
         end
       end
 
