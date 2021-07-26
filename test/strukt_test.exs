@@ -94,10 +94,38 @@ defmodule Strukt.Test do
              %Strukt.Test.Fixtures.CustomFields{
                camel_case_key: "key",
                name: "name",
-               uuid: "551aacdf-8dc0-47ac-8a0c-dd90701cf1e8"
+               uuid: _
              }
            } = Fixtures.CustomFields.new(params)
   end
+
+
+  test "can parse custom fields for embedded schema" do
+    params = %{NAME: "embedded", items: [%{itemName: "first item"}, %{itemName: "second item"}], meta: %{SOURCE: "iOS", Status: 1}}
+
+    assert {:ok,
+    %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
+      items: [
+        %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
+          name: "first item",
+          uuid: nil
+        },
+        %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
+          name: "second item",
+          uuid: nil
+        }
+      ],
+      meta: %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Meta{
+        source: "iOS",
+        status: 1,
+        uuid: nil
+      },
+      name: "embedded",
+      uuid: uuid
+    }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params)
+    refute is_nil(uuid)
+  end
+
 
   test "can derive a json encoder" do
     assert {:ok, %Fixtures.JSON{} = obj} = Fixtures.JSON.new()

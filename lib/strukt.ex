@@ -520,8 +520,8 @@ defmodule Strukt do
       defp transform_params(module, params, struct) when is_list(params) do
         for field <- module.__schema__(:fields), into: %{} do
           source_field_name = module.__schema__(:field_source, field)
-          value = params[source_field_name] || Map.get(struct, field)
-          {field, value}
+          value = params[source_field_name] || get_struct_field_value(struct, field)
+          map_value_to_field(module, field, value, struct)
         end
       end
 
@@ -531,9 +531,46 @@ defmodule Strukt do
 
           value =
             Map.get(params, source_field_name) ||
-              Map.get(params, source_field_name |> to_string()) || Map.get(struct, field)
+              Map.get(params, source_field_name |> to_string()) ||
+              get_struct_field_value(struct, field)
 
-          {field, value}
+          map_value_to_field(module, field, value, struct)
+        end
+      end
+
+      defp transform_params(module, params, struct, opts \\ [])
+
+      defp transform_params(module, params, struct, cardinality: :one) do
+        transform_params(module, params, struct)
+      end
+
+      defp transform_params(module, params, struct, cardinality: :many) do
+        Enum.with_index(params, fn param, index ->
+          transform_params(module, param, Enum.at(struct, index))
+        end)
+      end
+
+      defp map_value_to_field(module, field, value, struct) do
+        case module.__schema__(:type, field) do
+          {:parameterized, Ecto.Embedded,
+           %Ecto.Embedded{
+             cardinality: cardinality,
+             related: embedded_module
+           }} ->
+            {field,
+             transform_params(embedded_module, value, get_struct_field_value(struct, field),
+               cardinality: cardinality
+             )}
+
+          _type ->
+            {field, value}
+        end
+      end
+
+      defp get_struct_field_value(struct, field) do
+        case struct do
+          nil -> nil
+          struct -> Map.get(struct, field)
         end
       end
 
