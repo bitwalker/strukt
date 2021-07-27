@@ -128,6 +128,32 @@ defmodule Strukt.Test do
             }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params)
 
     refute is_nil(uuid)
+
+    params_with_nil_value = %{
+      NAME: nil,
+      items: nil,
+      meta: nil
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
+              items: [],
+              meta: nil,
+              name: nil,
+              uuid: uuid2
+            }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params_with_nil_value)
+
+    refute is_nil(uuid2)
+  end
+
+  test "can parse the params that contain nil value in embedded field" do
+    params = %{profile: nil, walles: nil}
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedParentSchema{profile: nil, uuid: uuid, wallets: []}} =
+             Fixtures.EmbeddedParentSchema.new(params)
+
+    refute is_nil(uuid)
   end
 
   test "parse custom fields with empry params" do

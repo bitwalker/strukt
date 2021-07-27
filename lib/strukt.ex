@@ -513,6 +513,7 @@ defmodule Strukt do
 
       def from_changeset(%Ecto.Changeset{} = cs), do: {:error, cs}
 
+      defp transform_params(module, nil = params, nil = struct), do: nil
       defp transform_params(_module, params, _struct)
            when is_map(params) and map_size(params) == 0,
            do: params
@@ -532,8 +533,6 @@ defmodule Strukt do
           map_value_to_field(module, field, value, struct)
         end
       end
-
-      defp transform_params(module, params, struct, opts \\ [])
 
       defp transform_params(module, params, struct, cardinality: :one) do
         transform_params(module, params, struct)
