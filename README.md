@@ -103,8 +103,8 @@ iex> {:ok, person} = Person.new(%{NAME: "Ivan", email: "ivan@example.com"})
 ...> person
 %Person{
   uuid: "f8736f15-bfdc-49bd-ac78-9da514208464",
-  name: "Paul",
-  email: "bitwalker@example.com",
+  name: "Ivan",
+  email: "ivan@example.com",
   inserted_at: ~N[2021-06-08 22:21:23.490554],
   updated_at: ~N[2021-06-08 22:21:23.490554]
 }
