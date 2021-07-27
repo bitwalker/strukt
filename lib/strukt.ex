@@ -544,7 +544,9 @@ defmodule Strukt do
       end
 
       defp transform_params(module, params, struct, cardinality: :many) do
-        Enum.with_index(params, fn param, index ->
+        params
+        |> Enum.with_index()
+        |> Enum.map(fn {param, index} ->
           transform_params(module, param, Enum.at(struct, index))
         end)
       end
