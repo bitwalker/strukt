@@ -102,6 +102,55 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule EmbeddedInlineModuleWithVirtualField do
+    @moduledoc "This module demonstrate parsing the virtual field into embedded struct"
+    use Strukt
+
+    defstruct do
+      embeds_one :profile, Profile do
+        field(:name, :any, virtual: true, required: true)
+      end
+
+      embeds_many :wallets, Wallet do
+        field(:currency, :any, virtual: true, required: true)
+      end
+    end
+  end
+
+  defmodule EmbeddedWithVirtualField do
+    @moduledoc "This module shows parsing params with virtual required field."
+    use Strukt
+
+    alias Strukt.Test.Fixtures.ProfileWithVirtualField
+    alias Strukt.Test.Fixtures.WalletWithVirtualField
+
+    defstruct do
+      embeds_one(:profile, ProfileWithVirtualField)
+      embeds_many(:wallets, WalletWithVirtualField)
+    end
+  end
+
+  defmodule ProfileWithVirtualField do
+    @moduledoc "This is the embedded one module with required virtual field"
+    use Strukt
+
+    defstruct do
+      field(:name, :any, virtual: true, required: true)
+      field(:phone, :string, source: :PHONE)
+    end
+  end
+
+  defmodule WalletWithVirtualField do
+    @moduledoc "This is the embedded many module with required virtual field"
+    use Strukt
+
+    defstruct do
+      field(:currency, :string)
+      field(:amount, :integer)
+      field(:native_currency, :any, virtual: true, required: true)
+    end
+  end
+
   defstruct Inline do
     @moduledoc "This module represents the simplest possible use of defstruct/2, i.e. inline definition of a struct and its module"
 

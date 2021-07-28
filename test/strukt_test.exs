@@ -146,6 +146,85 @@ defmodule Strukt.Test do
     refute is_nil(uuid2)
   end
 
+  test "can parse the params that inside the embedded module with required virtual field" do
+    params = %{
+      profile: %{name: "Rafael", PHONE: "+886999888777"},
+      wallets: [%{currency: "BTC", amount: 10, native_currency: "USD"}]
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedWithVirtualField{
+              profile: %Strukt.Test.Fixtures.ProfileWithVirtualField{
+                name: "Rafael",
+                phone: "+886999888777",
+                uuid: nil
+              },
+              uuid: _uuid,
+              wallets: [
+                %Strukt.Test.Fixtures.WalletWithVirtualField{
+                  amount: 10,
+                  currency: "BTC",
+                  native_currency: "USD",
+                  uuid: nil
+                }
+              ]
+            }} = Fixtures.EmbeddedWithVirtualField.new(params)
+
+    struct_params = %{
+      profile: %Strukt.Test.Fixtures.ProfileWithVirtualField{
+        name: "Rafael",
+        phone: "+886999888777"
+      },
+      wallets: [
+        %Strukt.Test.Fixtures.WalletWithVirtualField{
+          currency: "BTC",
+          amount: 10,
+          native_currency: "USD"
+        }
+      ]
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedWithVirtualField{
+              profile: %Strukt.Test.Fixtures.ProfileWithVirtualField{
+                name: "Rafael",
+                phone: nil,
+                uuid: nil
+              },
+              uuid: _uuid,
+              wallets: [
+                %Strukt.Test.Fixtures.WalletWithVirtualField{
+                  amount: 10,
+                  currency: "BTC",
+                  native_currency: "USD",
+                  uuid: nil
+                }
+              ]
+            }} = Fixtures.EmbeddedWithVirtualField.new(struct_params)
+  end
+
+  test "can parse the params that inside the embedded inline module with required virtual field" do
+    params = %{
+      profile: %{name: "Rafael"},
+      wallets: [%{currency: "BTC"}]
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField{
+              profile: %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Profile{
+                name: "Rafael",
+                uuid: nil
+              },
+              uuid: _uuid,
+              wallets: [
+                %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Wallet{
+                  currency: "BTC",
+                  uuid: nil
+                }
+              ]
+            }} = Fixtures.EmbeddedInlineModuleWithVirtualField.new(params)
+  end
+
   test "can parse the params that contain nil value in embedded field" do
     params = %{profile: nil, walles: nil}
 
