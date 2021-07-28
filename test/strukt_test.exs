@@ -111,17 +111,17 @@ defmodule Strukt.Test do
               items: [
                 %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
                   name: "first item",
-                  uuid: nil
+                  uuid: _
                 },
                 %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Item{
                   name: "second item",
-                  uuid: nil
+                  uuid: _
                 }
               ],
               meta: %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema.Meta{
                 source: "iOS",
                 status: 1,
-                uuid: nil
+                uuid: _
               },
               name: "embedded",
               uuid: uuid
@@ -157,7 +157,7 @@ defmodule Strukt.Test do
               profile: %Strukt.Test.Fixtures.ProfileWithVirtualField{
                 name: "Rafael",
                 phone: "+886999888777",
-                uuid: nil
+                uuid: _
               },
               uuid: _uuid,
               wallets: [
@@ -165,7 +165,7 @@ defmodule Strukt.Test do
                   amount: 10,
                   currency: "BTC",
                   native_currency: "USD",
-                  uuid: nil
+                  uuid: _
                 }
               ]
             }} = Fixtures.EmbeddedWithVirtualField.new(params)
@@ -213,16 +213,36 @@ defmodule Strukt.Test do
             %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField{
               profile: %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Profile{
                 name: "Rafael",
-                uuid: nil
+                uuid: _
               },
               uuid: _uuid,
               wallets: [
                 %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Wallet{
                   currency: "BTC",
-                  uuid: nil
+                  uuid: _
                 }
               ]
             }} = Fixtures.EmbeddedInlineModuleWithVirtualField.new(params)
+
+    string_key_params = %{
+      "profile" => %{"name" => "Rafael"},
+      "wallets" => [%{"currency" => "BTC"}]
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField{
+              profile: %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Profile{
+                name: "Rafael",
+                uuid: _
+              },
+              uuid: _,
+              wallets: [
+                %Strukt.Test.Fixtures.EmbeddedInlineModuleWithVirtualField.Wallet{
+                  currency: "BTC",
+                  uuid: _
+                }
+              ]
+            }} = Fixtures.EmbeddedInlineModuleWithVirtualField.new(string_key_params)
   end
 
   test "can parse the params that contain nil value in embedded field" do
