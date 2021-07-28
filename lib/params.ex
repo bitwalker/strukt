@@ -10,47 +10,20 @@ defmodule Strukt.Params do
       when is_map(params) and map_size(params) == 0,
       do: params
 
-  def transform(module, %{__struct__: _} = params, nil = struct) do
-    params
-    |> Map.from_struct()
-    |> Map.to_list()
-    |> Enum.map(fn {key, _value} ->
-      case module.__schema__(:field_source, key) do
-        nil ->
-          {key, get_params_field_value(params, key, struct)}
-
-        source_field_name ->
-          value = get_params_field_value(params, source_field_name, struct)
-          map_value_to_field(module, key, value, struct)
-      end
-    end)
-    |> Map.new()
+  def transform(module, %{__struct__: _} = params, nil = _struct) do
+    transform_from_struct(module, params, params)
   end
 
-  def transform(module, params, nil = struct) do
-    for field <- module.__schema__(:fields), into: %{} do
-      source_field_name = module.__schema__(:field_source, field)
-      value = get_params_field_value(params, source_field_name, struct)
-      map_value_to_field(module, field, value, struct)
-    end
-    |> Map.merge(params)
+  def transform(module, params, nil = _struct) do
+    struct =
+      struct(module)
+      |> Strukt.Autogenerate.generate()
+
+    transform_from_struct(module, params, struct)
   end
 
   def transform(module, params, %{__struct__: _} = struct) do
-    struct
-    |> Map.from_struct()
-    |> Map.to_list()
-    |> Enum.map(fn {key, _value} ->
-      case module.__schema__(:field_source, key) do
-        nil ->
-          {key, get_params_field_value(params, key, struct)}
-
-        source_field_name ->
-          value = get_params_field_value(params, source_field_name, struct)
-          map_value_to_field(module, key, value, struct)
-      end
-    end)
-    |> Map.new()
+    transform_from_struct(module, params, struct)
   end
 
   defp transform(module, params, struct, cardinality: :one) do
@@ -69,6 +42,23 @@ defmodule Strukt.Params do
     |> Enum.map(fn {param, index} ->
       transform(module, param, Enum.at(struct, index))
     end)
+  end
+
+  defp transform_from_struct(module, params, struct) do
+    struct
+    |> Map.from_struct()
+    |> Map.to_list()
+    |> Enum.map(fn {key, _value} ->
+      case module.__schema__(:field_source, key) do
+        nil ->
+          {key, get_params_field_value(params, key, struct)}
+
+        source_field_name ->
+          value = get_params_field_value(params, source_field_name, struct)
+          map_value_to_field(module, key, value, struct)
+      end
+    end)
+    |> Map.new()
   end
 
   defp map_value_to_field(module, field, value, struct) do
