@@ -57,6 +57,51 @@ defmodule Strukt.Test.Fixtures do
     end
   end
 
+  defmodule EmbeddedParentSchema do
+    @moduledoc "This module represents the embedded one parent schema"
+
+    use Strukt
+
+    alias Strukt.Test.Fixtures.ProfileSchema
+    alias Strukt.Test.Fixtures.WalletSchema
+
+    defstruct do
+      embeds_one(:profile, ProfileSchema)
+      embeds_many(:wallets, WalletSchema)
+    end
+  end
+
+  defmodule ProfileSchema do
+    @moduledoc "This module is an embedded schema for the EmbeddedParentSchema"
+
+    use Strukt
+
+    defstruct do
+      field(:name, :string)
+      field(:email, :string)
+    end
+  end
+
+  defmodule WalletSchema do
+    @moduledoc "This module is an embedded schema for the EmbeddedParentSchema"
+    use Strukt
+
+    defstruct do
+      field(:currency, :string)
+      field(:amount, :integer)
+    end
+  end
+
+  defmodule VirtualField do
+    @moduledoc "This module shows params can parse into the virtual field"
+    use Strukt
+
+    defstruct do
+      field(:name, :string, virtual: true)
+      field(:phone, :string)
+    end
+  end
+
   defstruct Inline do
     @moduledoc "This module represents the simplest possible use of defstruct/2, i.e. inline definition of a struct and its module"
 
@@ -64,6 +109,11 @@ defmodule Strukt.Test.Fixtures do
 
     @doc "This function is defined in the Inline module"
     def test, do: true
+  end
+
+  defstruct InlineVirtualField do
+    field(:name, :string, virtual: true)
+    field(:phone, :string)
   end
 
   defstruct Embedded do
