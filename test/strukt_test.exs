@@ -128,9 +128,63 @@ defmodule Strukt.Test do
             }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params)
 
     refute is_nil(uuid)
+
+    params_with_nil_value = %{
+      NAME: nil,
+      items: nil,
+      meta: nil
+    }
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
+              items: [],
+              meta: nil,
+              name: nil,
+              uuid: uuid2
+            }} = Fixtures.CustomFieldsWithEmbeddedSchema.new(params_with_nil_value)
+
+    refute is_nil(uuid2)
   end
 
-  test "parse custom fields with empry params" do
+  test "can parse the params that contain nil value in embedded field" do
+    params = %{profile: nil, walles: nil}
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.EmbeddedParentSchema{profile: nil, uuid: uuid, wallets: []}} =
+             Fixtures.EmbeddedParentSchema.new(params)
+
+    refute is_nil(uuid)
+  end
+
+  test "can parse the params to the virtual field" do
+    params = %{name: "Daniel", phone: "+85299887766"}
+
+    assert {:ok,
+            %Strukt.Test.Fixtures.VirtualField{
+              name: "Daniel",
+              phone: "+85299887766",
+              uuid: uuid
+            }} = Fixtures.VirtualField.new(params)
+
+    refute is_nil(uuid)
+  end
+
+  test "can parse the params to the InlineSchema virtual field" do
+    params = %{name: "Daniel", phone: "+85299887766"}
+
+    assert {
+             :ok,
+             %Strukt.Test.Fixtures.InlineVirtualField{
+               name: "Daniel",
+               phone: "+85299887766",
+               uuid: uuid
+             }
+           } = Fixtures.InlineVirtualField.new(params)
+
+    refute is_nil(uuid)
+  end
+
+  test "parse custom fields with empty params" do
     assert {:ok,
             %Strukt.Test.Fixtures.CustomFieldsWithEmbeddedSchema{
               items: [],

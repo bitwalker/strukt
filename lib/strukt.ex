@@ -353,7 +353,7 @@ defmodule Strukt do
             struct(__MODULE__)
             |> Strukt.Autogenerate.generate()
 
-          formed_params = transform_params(__MODULE__, params, struct)
+          formed_params = Strukt.Params.transform(__MODULE__, params, struct)
 
           struct
           |> changeset(formed_params, :insert)
@@ -512,88 +512,6 @@ defmodule Strukt do
         do: {:ok, Ecto.Changeset.apply_changes(cs)}
 
       def from_changeset(%Ecto.Changeset{} = cs), do: {:error, cs}
-
-      defp transform_params(_module, params, _struct)
-           when is_map(params) and map_size(params) == 0,
-           do: params
-
-      defp transform_params(module, params, struct) when is_list(params) do
-        for field <- module.__schema__(:fields), into: %{} do
-          source_field_name = module.__schema__(:field_source, field)
-          value = get_params_field_value(params, source_field_name, struct)
-          map_value_to_field(module, field, value, struct)
-        end
-      end
-
-      defp transform_params(module, params, struct) when is_map(params) do
-        for field <- module.__schema__(:fields), into: %{} do
-          source_field_name = module.__schema__(:field_source, field)
-          value = get_params_field_value(params, source_field_name, struct)
-          map_value_to_field(module, field, value, struct)
-        end
-      end
-
-      defp transform_params(module, params, struct, opts \\ [])
-
-      defp transform_params(module, params, struct, cardinality: :one) do
-        transform_params(module, params, struct)
-      end
-
-      defp transform_params(module, params, nil = struct, cardinality: :many) do
-        Enum.with_index(params, fn param, index ->
-          transform_params(module, param, struct)
-        end)
-      end
-
-      defp transform_params(module, params, struct, cardinality: :many) do
-        params
-        |> Enum.with_index()
-        |> Enum.map(fn {param, index} ->
-          transform_params(module, param, Enum.at(struct, index))
-        end)
-      end
-
-      defp map_value_to_field(module, field, value, struct) do
-        case module.__schema__(:type, field) do
-          {:parameterized, Ecto.Embedded,
-           %Ecto.Embedded{
-             cardinality: cardinality,
-             related: embedded_module
-           }} ->
-            {field,
-             transform_params(embedded_module, value, get_struct_field_value(struct, field),
-               cardinality: cardinality
-             )}
-
-          _type ->
-            {field, value}
-        end
-      end
-
-      defp get_params_field_value(params, field, struct) when is_list(params) do
-        case params[field] do
-          nil -> get_struct_field_value(struct, field)
-          value -> value
-        end
-      end
-
-      defp get_params_field_value(params, field, struct) when is_map(params) do
-        atom_key_value = Map.get(params, field)
-        string_key_value = Map.get(params, field |> to_string())
-
-        case {atom_key_value, string_key_value} do
-          {nil, nil} -> get_struct_field_value(struct, field)
-          {atom_key_value, nil} -> atom_key_value
-          {nil, string_key_value} -> string_key_value
-        end
-      end
-
-      defp get_struct_field_value(struct, field) do
-        case struct do
-          nil -> nil
-          struct -> Map.get(struct, field)
-        end
-      end
 
       @doc "Deserialize this type from a JSON string or iodata"
       @spec from_json(binary | iodata) :: {:ok, t} | {:error, reason :: term}
