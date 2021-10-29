@@ -79,6 +79,7 @@ defmodule Strukt.Params do
   end
 
   defp get_params_field_value(nil, _field, _struct), do: nil
+
   defp get_params_field_value(params, field, struct) when is_list(params) do
     case params[field] do
       nil -> get_struct_field_value(struct, field)
