@@ -80,7 +80,8 @@ true
 
 ## Custom Fields
 
-use `:source` to fetch the field different than snake_case format.
+Using the `:source` option allows you to express that a given field may be provided as a parameter
+using a different naming scheme than is used in idiomatic Elixir code (i.e. snake case):
 
 ``` elixir
 defmodule Person do
@@ -109,5 +110,7 @@ iex> {:ok, person} = Person.new(%{NAME: "Ivan", email: "ivan@example.com"})
   updated_at: ~N[2021-06-08 22:21:23.490554]
 }
 ```
+
+NOTE: This does not affect serialization/deserialization via `Jason.Encoder` when derived.
 
 For more, see the [usage docs](https://hexdocs.pm/strukt/usage.html)
