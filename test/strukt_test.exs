@@ -458,8 +458,8 @@ defmodule Strukt.Test do
     cs
     |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
       Enum.reduce(opts, msg, fn
-        {key, {:parameterized, Ecto.Enum, %{values: values}}}, acc ->
-          String.replace(acc, "%{#{key}}", values |> Enum.map(&to_string/1) |> Enum.join(", "))
+        {key, {:parameterized, Ecto.Enum, %{mappings: values}}}, acc ->
+          String.replace(acc, "%{#{key}}", values |> Keyword.values() |> Enum.join(", "))
 
         {key, %Range{} = value}, acc ->
           String.replace(acc, "%{#{key}}", inspect(value))
