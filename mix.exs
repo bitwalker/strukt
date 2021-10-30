@@ -4,7 +4,7 @@ defmodule Strukt.MixProject do
   def project do
     [
       app: :strukt,
-      version: "0.2.2",
+      version: "0.3.0",
       elixir: "~> 1.11",
       description: description(),
       package: package(),
