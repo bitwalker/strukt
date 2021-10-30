@@ -1,7 +1,4 @@
 defmodule Strukt do
-  @moduledoc """
-
-  """
   import Kernel, except: [defstruct: 1, defstruct: 2]
   import Strukt.Field, only: [is_supported: 1]
 
@@ -33,20 +30,23 @@ defmodule Strukt do
   all of the inline validations defined on the schema.
 
   NOTE: It is recommended that if you need to perform custom validations, that
-  you override `c:validate/1` instead. If you need to override this callback
-  specifically for some reason, make sure you call `super/2` at some point during
+  you use the `validation/1` and `validation/2` facility for performing custom
+  validations in a module or function, and if necessary, override `c:validate/1` 
+  instead of performing validations in this callback. If you need to override this 
+  callback specifically for some reason, make sure you call `super/2` at some point during
   your implementation to ensure that validations are run.
   """
   @callback change(Ecto.Changeset.t() | term(), Keyword.t() | map()) :: Ecto.Changeset.t()
 
   @doc """
-  This callback can be overridden to provide custom validation logic.
+  This callback can be overridden to manually implement your own validation logic.
 
-  The default implementation simply returns the changeset it is given. Validations
-  defined inline with fields are handled by a specially generated `__validate__/1`
-  function which is called directly by `new/1` and `change/2`.
+  The default implementation handles invoking the validation rules expressed inline
+  or via the `validation/1` and `validation/2` macros. You may still invoke the default
+  validations from your own implementation using `super/1`.
 
-  NOTE: If you override this function, there is no need to invoke `super/1`
+  This function can be called directly on a changeset, and is automatically invoked
+  by the default `new/1` and `change/2` implementations.
   """
   @callback validate(Ecto.Changeset.t()) :: Ecto.Changeset.t()
 
@@ -74,8 +74,78 @@ defmodule Strukt do
 
   defmacro __using__(_) do
     quote do
-      import Kernel, except: [defstruct: 1, defstruct: 2]
+      import Kernel, except: [defstruct: 1, defstruct: 2, validation: 1, validation: 2]
       import unquote(__MODULE__), only: :macros
+    end
+  end
+
+  @doc """
+  Defines a validation rule for the current struct validation pipeline.
+
+  A validation pipeline is constructed by expressing the rules in the order
+  in which you want them applied, from top down. The validations may be defined
+  anywhere in the module, but the order of application is always top down.
+
+  You may define either module validators or function validators, much like `Plug.Builder`.
+  For module validators, the module is expected to implement the `Strukt.Validator` behavior,
+  consisting of the `init/1` and `validate/2` callbacks. For function validators, they are
+  expected to be of arity 2. Both the `validate/2` callback and function validators receive
+  the changeset to validate/manipulate as their first argument, and options passed to the
+  `validation/2` macro, if provided.
+
+  ## Guards
+
+  Validation rules that should be applied conditionally can either handle the conditional
+  logic in their implementation, or if simple, can use guards to express this instead, which
+  can be more efficient.
+
+  Guards may use the changeset being validated in their conditions by referring to `changeset`.
+  See the example below to see how these can be expressed.
+
+  ## Example
+
+      defmodule Upload do
+        use Strukt
+
+        @allowed_content_types ["application/json", "application/pdf", "text/csv"]
+
+        defstruct do
+          field :filename, :string
+          field :content, :binary, default: <<>>
+          field :content_type, :string, required: true
+        end
+
+        # A simple function validator, expects a function in the same module
+        validation :validate_filename
+
+        # A function validator with a guard clause, only applied when the guard is successful
+        validation :validate_content_type when is_map_key(changeset.changes, :content_type)
+
+        # A module validator with options
+        validation MyValidations.EnsureContentMatchesType, @allowed_content_types
+
+        # A validator with options and a guard clause
+        validation :example, [foo: :bar] when changeset.action == :update
+
+        defp validate_filename(changeset, _opts), do: changeset
+      end
+  """
+  defmacro validation(validator, opts \\ [])
+
+  defmacro validation({:when, _meta, [validator | guards]}, opts) do
+    validator = Macro.expand(validator, %{__CALLER__ | function: {:init, 1}})
+
+    quote do
+      @strukt_validators {unquote(validator), unquote(opts),
+                          unquote(Macro.escape(guards, unquote: true))}
+    end
+  end
+
+  defmacro validation(validator, opts) do
+    validator = Macro.expand(validator, %{__CALLER__ | function: {:init, 1}})
+
+    quote do
+      @strukt_validators {unquote(validator), unquote(opts), true}
     end
   end
 
@@ -255,6 +325,8 @@ defmodule Strukt do
         @behaviour unquote(__MODULE__)
         @before_compile unquote(__MODULE__)
 
+        Module.register_attribute(__MODULE__, :strukt_validators, accumulate: true)
+
         # Generate child structs before generating the parent
         unquote_splicing(children)
 
@@ -374,7 +446,6 @@ defmodule Strukt do
             %Ecto.Changeset{} = cs ->
               cs
               |> Ecto.Changeset.change(params)
-              |> __validate__()
               |> validate()
 
             %__MODULE__{} = entity ->
@@ -383,16 +454,14 @@ defmodule Strukt do
         end
 
         @doc """
-        Validates a changeset for this type. Automatically called by `new/1`, `change/2`, and `changeset/{1,2}`.
-
-        NOTE: This function can be overridden manually to provide additional validations above
-        and beyond those defined by the schema itself, for cases where the validation options
-        available are not rich enough to express the necessary business rules. By default this
-        function just returns the input changeset, as `changeset` automatically applies the
-        schema validations for you.
+        Validates a changeset for this type.
         """
         @impl Strukt
-        def validate(cs), do: cs
+        def validate(changeset) do
+          changeset
+          |> __validate__()
+          |> validator_builder_call([])
+        end
 
         defoverridable unquote(__MODULE__)
 
@@ -412,7 +481,12 @@ defmodule Strukt do
 
   @doc false
   defmacro __before_compile__(env) do
-    quote location: :keep, bind_quoted: [schema_module: env.module] do
+    schema_module = env.module
+    validators = Module.get_attribute(env.module, :strukt_validators)
+
+    {changeset, validate_body} = Strukt.Validator.Builder.compile(env, validators, [])
+
+    quote location: :keep do
       # Injects the type spec for this module based on the schema
       typespec_ast =
         Strukt.Typespec.generate(%Strukt.Typespec{
@@ -423,6 +497,9 @@ defmodule Strukt do
         })
 
       Module.eval_quoted(__ENV__, typespec_ast)
+
+      defp validator_builder_call(unquote(changeset), opts),
+        do: unquote(validate_body)
 
       @doc """
       Generates an `Ecto.Changeset` for this type, using the provided params.
@@ -458,7 +535,6 @@ defmodule Strukt do
         cast(entity, params, @cast_fields)
         |> Map.put(:action, action)
         |> __cast_embeds__(@cast_embed_fields)
-        |> __validate__()
         |> validate()
       end
 
@@ -527,7 +603,7 @@ defmodule Strukt do
 
       # Handle conditional implementation of Jason.Encoder
       if Module.get_attribute(__MODULE__, :derives_jason) do
-        defimpl Jason.Encoder, for: schema_module do
+        defimpl Jason.Encoder, for: unquote(schema_module) do
           def encode(value, opts) do
             value
             |> Ecto.embedded_dump(:json)

@@ -236,9 +236,10 @@ defmodule Strukt.Test.Fixtures do
     field(:age, :integer, number: [greater_than: 0])
     field(:status, Ecto.Enum, values: [:red, :green, :blue])
 
-    @doc "This is an override of the validate/1 callback, where you can add additional validations to be run automatically"
+    @doc "This is an override of the validate/1 callback, where you can fully control how validations are applied"
     def validate(changeset) do
       changeset
+      |> super()
       |> validate_length(:name, min: 2, max: 100)
     end
   end
@@ -250,7 +251,7 @@ defmodule Strukt.Test.Fixtures do
   end
 
   defstruct ValidateLengths do
-    @moduledoc "This module excersizes validations on string length"
+    @moduledoc "This module exercises validations on string length"
 
     field(:exact, :string,
       required: [message: "must be 3 characters"],
@@ -269,7 +270,7 @@ defmodule Strukt.Test.Fixtures do
   end
 
   defstruct ValidateSets do
-    @moduledoc "This module excersizes validations based on set membership"
+    @moduledoc "This module exercises validations based on set membership"
 
     field(:one_of, :string, one_of: [values: ["a", "b", "c"], message: "must be one of [a, b, c]"])
 
@@ -281,7 +282,7 @@ defmodule Strukt.Test.Fixtures do
   end
 
   defstruct ValidateNumbers do
-    @moduledoc "This module excersizes validations on numbers"
+    @moduledoc "This module exercises validations on numbers"
 
     field(:bounds, :integer, number: [greater_than: 1, less_than: 100])
 
@@ -292,5 +293,30 @@ defmodule Strukt.Test.Fixtures do
     field(:eq, :integer, number: [equal_to: 1])
     field(:neq, :integer, number: [not_equal_to: 1])
     field(:range, :integer, range: 1..100)
+  end
+
+  defstruct ValidationPipelines do
+    @moduledoc "This module exercises validation pipeline functionality"
+
+    @allowed_content_types ["application/json", "application/pdf", "text/csv"]
+
+    field(:filename, :string, required: true, format: ~r/.+\.([a-z][a-z0-9])+/)
+    field(:content_type, :string, required: true)
+    field(:content, :binary, default: <<>>)
+
+    validation(:validate_filename)
+
+    validation(
+      :validate_content_type
+      when changeset.action == :update and is_map_key(changeset.changes, :content_type)
+    )
+
+    validation(Strukt.Test.Validators.ValidateFileAndContentType, @allowed_content_types)
+
+    defp validate_filename(changeset, _opts),
+      do: changeset
+
+    defp validate_content_type(changeset, _opts),
+      do: Ecto.Changeset.add_error(changeset, :content_type, "cannot change content type")
   end
 end

@@ -454,6 +454,44 @@ defmodule Strukt.Test do
     assert %{range: ["must be in the range 1..100"]} = changeset_errors(changeset)
   end
 
+  test "validate runs a validation pipeline if present" do
+    # The initial insert action should succeed because the validator which always fails,
+    # validate_content_type is only applied on updates which include changes to the content type
+    assert {:ok, strukt} =
+             Fixtures.ValidationPipelines.new(
+               filename: "foo.pdf",
+               content_type: "application/pdf"
+             )
+
+    # This should also succeed because the content type and filename match, and the content type wasn't changed,
+    # so the validate_content_type validator won't be run
+    assert {:ok, strukt} =
+             Fixtures.ValidationPipelines.change(strukt, filename: "bar.pdf")
+             |> Fixtures.ValidationPipelines.from_changeset()
+
+    # This will fail with two errors:
+    # - The validate_content_type disallows any changes to the content type
+    # - The ValidateFileAndContentType validator will reject a change with a mismatched filename/content type
+    assert {:error, changeset} =
+             Fixtures.ValidationPipelines.change(strukt, content_type: "application/json")
+             |> Fixtures.ValidationPipelines.from_changeset()
+
+    assert %{
+             content_type: [
+               "mismatched content type and file extension",
+               "cannot change content type"
+             ]
+           } = changeset_errors(changeset)
+
+    # This will fail with one error:
+    # - The ValidateFileAndContentType validator will reject a change with a mismatched filename/content type
+    assert {:error, changeset} =
+             Fixtures.ValidationPipelines.change(strukt, filename: "bar.json")
+             |> Fixtures.ValidationPipelines.from_changeset()
+
+    assert %{filename: ["filename must match content type of file"]} = changeset_errors(changeset)
+  end
+
   defp changeset_errors(%Ecto.Changeset{} = cs) do
     cs
     |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
