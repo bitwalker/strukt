@@ -1,3 +1,7 @@
+# 0.3.1
+
+- FIXED: Improved generation of typespecs
+
 # 0.3.0
 
 - ADDED: Support for reusable validation rules via the `Strukt.Validator` behavior
