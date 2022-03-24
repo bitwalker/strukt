@@ -521,6 +521,30 @@ defmodule Strukt.Test do
              Fixtures.TypeSpec.expected_type_spec_ast_str()
   end
 
+  test "embeds_one nilable type" do
+    require Fixtures.EmbedsOneTypeSpec
+
+    assert inspect(
+             Strukt.Typespec.generate(%Strukt.Typespec{
+               caller: Strukt.Test.Fixtures.EmbedsOneTypeSpec,
+               fields: [],
+               info: %{
+                 required_embeds_one: %{
+                   type: :embeds_one,
+                   value_type: :Aux,
+                   required: true
+                 },
+                 optional_embeds_one: %{
+                   type: :embeds_one,
+                   value_type: :Aux
+                 }
+               },
+               embeds: [:required_embeds_one, :optional_embeds_one]
+             })
+           ) ==
+             Fixtures.EmbedsOneTypeSpec.expected_type_spec_ast_str()
+  end
+
   defp changeset_errors(%Ecto.Changeset{} = cs) do
     cs
     |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->
