@@ -59,7 +59,7 @@ defmodule Strukt.Typespec do
           if required? or not is_nil(default_value) do
             type_name
           else
-            {:|, [], [type_name, nil]}
+            nilable(type_name)
           end
 
         {name, type_spec}
@@ -70,8 +70,15 @@ defmodule Strukt.Typespec do
       embeds
       |> Enum.map(fn name -> {name, Map.fetch!(info, name)} end)
       |> Enum.map(fn
-        {name, %{type: :embeds_one, value_type: type}} ->
-          {name, compose_call(type, :t, [])}
+        {name, %{type: :embeds_one, value_type: type} = meta} ->
+          required? = Map.get(meta, :required) == true
+          type_name = compose_call(type, :t, [])
+
+          if required? do
+            {name, type_name}
+          else
+            {name, nilable(type_name)}
+          end
 
         {name, %{type: :embeds_many, value_type: type}} ->
           {name, List.wrap(compose_call(type, :t, []))}
@@ -97,6 +104,8 @@ defmodule Strukt.Typespec do
 
   defp compose_call({:__aliases__, _, _} = module, function, args) when is_list(args),
     do: {{:., [], [module, function]}, [], args}
+
+  defp nilable(type_name), do: {:|, [], [type_name, nil]}
 
   defp type_to_type_name(:id), do: primitive(:non_neg_integer)
   defp type_to_type_name(:binary_id), do: primitive(:binary)

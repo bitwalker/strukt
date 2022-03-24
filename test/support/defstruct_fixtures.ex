@@ -1,3 +1,14 @@
+defmodule Aux do
+  @moduledoc """
+  auxiliary module for testing
+  """
+  use Strukt
+
+  defstruct do
+    field(:aux, :string)
+  end
+end
+
 defmodule Strukt.Test.Fixtures do
   use Strukt
 
@@ -35,6 +46,26 @@ defmodule Strukt.Test.Fixtures do
                 optional_field: integer() | nil,
                 default_field: integer(),
                 default_nil_field: integer() | nil
+              }
+      end
+      |> inspect()
+    end
+  end
+
+  defmodule EmbedsOneTypeSpec do
+    use Strukt
+
+    @primary_key false
+    defstruct do
+      embeds_one(:required_embeds_one, Aux, required: true)
+      embeds_one(:optional_embeds_one, Aux)
+    end
+
+    defmacro expected_type_spec_ast_str do
+      quote context: __MODULE__ do
+        @type t :: %__MODULE__{
+                required_embeds_one: Aux.t(),
+                optional_embeds_one: Aux.t() | nil
               }
       end
       |> inspect()
