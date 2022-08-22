@@ -521,6 +521,39 @@ defmodule Strukt.Test do
              Fixtures.TypeSpec.expected_type_spec_ast_str()
   end
 
+  test "can generate simple type spec and nullable respect default/required setting with embeds schema" do
+    require Fixtures.TypeSpecWithEmbesModule
+
+    assert inspect(
+             Strukt.Typespec.generate(%Strukt.Typespec{
+               caller: Strukt.Test.Fixtures.TypeSpecWithEmbesModule,
+               fields: [:optional_field],
+               info: %{
+                 optional_field: %{
+                   type: :field,
+                   value_type: :integer,
+                   required: false,
+                   default: nil
+                 },
+                 type_specs: %{
+                   type: :embeds_many,
+                   value_type: Strukt.Test.Fixtures.TypeSpec,
+                   required: false,
+                   default: nil
+                 },
+                 type_spec: %{
+                   type: :embeds_one,
+                   value_type: Strukt.Test.Fixtures.TypeSpec,
+                   required: true,
+                   default: nil
+                 }
+               },
+               embeds: [:type_spec, :type_specs]
+             })
+           ) ==
+             Fixtures.TypeSpecWithEmbesModule.expected_type_spec_ast_str()
+  end
+
   defp changeset_errors(%Ecto.Changeset{} = cs) do
     cs
     |> Ecto.Changeset.traverse_errors(fn {msg, opts} ->

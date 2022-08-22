@@ -22,10 +22,10 @@ defmodule Strukt.Test.Fixtures do
 
     @primary_key false
     defstruct do
-      field(:required_filed, :string, required: true)
-      field(:optional_field, :string)
-      field(:default_field, :string, default: "")
-      field(:default_nil_field, :string, default: nil)
+      field(:required_filed, :integer, required: true)
+      field(:optional_field, :integer)
+      field(:default_field, :integer, default: 100)
+      field(:default_nil_field, :integer, default: nil)
     end
 
     defmacro expected_type_spec_ast_str do
@@ -35,6 +35,28 @@ defmodule Strukt.Test.Fixtures do
                 optional_field: integer() | nil,
                 default_field: integer(),
                 default_nil_field: integer() | nil
+              }
+      end
+      |> inspect()
+    end
+  end
+
+  defmodule TypeSpecWithEmbesModule do
+    use Strukt
+
+    @primary_key false
+    defstruct do
+      field(:optional_field, :integer)
+      embeds_one(:type_spec, TypeSpec, required: true)
+      embeds_many(:type_specs, TypeSpec)
+    end
+
+    defmacro expected_type_spec_ast_str do
+      quote context: __MODULE__ do
+        @type t :: %__MODULE__{
+                optional_field: integer() | nil,
+                type_spec: TypeSpec.t(),
+                type_specs: [TypeSpec.t()] | nil
               }
       end
       |> inspect()

@@ -70,11 +70,29 @@ defmodule Strukt.Typespec do
       embeds
       |> Enum.map(fn name -> {name, Map.fetch!(info, name)} end)
       |> Enum.map(fn
-        {name, %{type: :embeds_one, value_type: type}} ->
-          {name, compose_call(type, :t, [])}
+        {name, %{type: :embeds_one, value_type: type} = meta} ->
+          required? = Map.get(meta, :required) == true
+          module_name = Module.split(type) |> Enum.at(-1) |> String.to_existing_atom()
 
-        {name, %{type: :embeds_many, value_type: type}} ->
-          {name, List.wrap(compose_call(type, :t, []))}
+          type_spec =
+            if required? do
+              compose_call({:__aliases__, type, module_name}, :t, [])
+            else
+              {:|, [], [compose_call({:__aliases__, type, module_name}, :t, []), nil]}
+            end
+
+          {name, type_spec}
+
+        {name, %{type: :embeds_many, value_type: type} = meta} ->
+          required? = Map.get(meta, :required) == true
+          module_name = Module.split(type) |> Enum.at(-1) |> String.to_existing_atom()
+          type_spec = compose_call({:__aliases__, type, module_name}, :t, [])
+
+          if required? do
+            {name, List.wrap(type_spec)}
+          else
+            {name, {:|, [], [List.wrap(type_spec), nil]}}
+          end
       end)
 
     # Join all fields together
@@ -95,8 +113,8 @@ defmodule Strukt.Typespec do
   defp compose_call(module, function, args) when is_atom(module) and is_list(args),
     do: {{:., [], [{:__aliases__, [alias: false], [module]}, function]}, [], args}
 
-  defp compose_call({:__aliases__, _, _} = module, function, args) when is_list(args),
-    do: {{:., [], [module, function]}, [], args}
+  defp compose_call({:__aliases__, module, module_alias}, function, args) when is_list(args),
+    do: {{:., [], [{:__aliases__, [alias: module], [module_alias]}, function]}, [], args}
 
   defp type_to_type_name(:id), do: primitive(:non_neg_integer)
   defp type_to_type_name(:binary_id), do: primitive(:binary)

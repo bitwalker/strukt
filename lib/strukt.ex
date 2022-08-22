@@ -31,8 +31,8 @@ defmodule Strukt do
 
   NOTE: It is recommended that if you need to perform custom validations, that
   you use the `validation/1` and `validation/2` facility for performing custom
-  validations in a module or function, and if necessary, override `c:validate/1` 
-  instead of performing validations in this callback. If you need to override this 
+  validations in a module or function, and if necessary, override `c:validate/1`
+  instead of performing validations in this callback. If you need to override this
   callback specifically for some reason, make sure you call `super/2` at some point during
   your implementation to ensure that validations are run.
   """
