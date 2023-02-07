@@ -1,11 +1,13 @@
 defmodule Strukt.Typespec do
   @moduledoc false
 
-  defstruct [:caller, :info, :fields, :embeds]
+  defstruct [:caller, :opaque, :info, :fields, :embeds]
 
   @type t :: %__MODULE__{
           # The module where the struct is being defined
           caller: module,
+          # Defines whether the typespec should be opaque or the default type
+          opaque: boolean,
           # Metadata about all fields in the struct
           info: %{optional(atom) => map},
           # A list of all non-embed field names
@@ -45,7 +47,7 @@ defmodule Strukt.Typespec do
   * `fields` - This is a list of all field names which are defined via `field/3`
   * `embeds` - This is a list of all field names which are defined via `embeds_one/3` or `embeds_many/3`
   """
-  def generate(%__MODULE__{caller: caller, info: info, fields: fields, embeds: embeds}) do
+  def generate(%__MODULE__{caller: caller, opaque: opaque, info: info, fields: fields, embeds: embeds}) do
     # Build up the AST for each field's type spec
     fields =
       fields
@@ -87,7 +89,11 @@ defmodule Strukt.Typespec do
     # Join all fields together
     struct_fields = fields ++ embeds
 
-    quote(context: caller, do: @type(t :: %__MODULE__{unquote_splicing(struct_fields)}))
+    if opaque do
+      quote(context: caller, do: @opaque(t :: %__MODULE__{unquote_splicing(struct_fields)}))
+    else
+      quote(context: caller, do: @type(t :: %__MODULE__{unquote_splicing(struct_fields)}))
+    end
   end
 
   defp primitive(atom, args \\ []) when is_atom(atom) and is_list(args),
