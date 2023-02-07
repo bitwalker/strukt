@@ -31,8 +31,8 @@ defmodule Strukt do
 
   NOTE: It is recommended that if you need to perform custom validations, that
   you use the `validation/1` and `validation/2` facility for performing custom
-  validations in a module or function, and if necessary, override `c:validate/1` 
-  instead of performing validations in this callback. If you need to override this 
+  validations in a module or function, and if necessary, override `c:validate/1`
+  instead of performing validations in this callback. If you need to override this
   callback specifically for some reason, make sure you call `super/2` at some point during
   your implementation to ensure that validations are run.
   """
@@ -242,9 +242,11 @@ defmodule Strukt do
           []
       end
 
+    opaque_fields = Enum.any?(special_attrs, fn {:@, _, [{attr, _, [value]}]} -> attr == :opaque_fields &&!!value end)
+
     fields = Strukt.Field.parse(fields)
 
-    define_struct(env, name, meta, moduledoc, derives, schema_attrs, fields, body)
+    define_struct(env, name, meta, moduledoc, derives, opaque_fields, schema_attrs, fields, body)
   end
 
   # This clause handles the edge case where the definition only contains
@@ -252,10 +254,10 @@ defmodule Strukt do
   defp define_struct(env, name, {type, _, _} = field) when is_supported(type) do
     fields = Strukt.Field.parse([field])
 
-    define_struct(env, name, [], nil, [], [], fields, [])
+    define_struct(env, name, [], nil, [], false, [], fields, [])
   end
 
-  defp define_struct(_env, name, meta, moduledoc, derives, schema_attrs, fields, body) do
+  defp define_struct(_env, name, meta, moduledoc, derives, opaque_fields, schema_attrs, fields, body) do
     # Extract macros which should be defined at the top of the module
     {macros, body} =
       Enum.split_with(body, fn
@@ -356,6 +358,7 @@ defmodule Strukt do
         end
 
         @schema_name Macro.underscore(__MODULE__)
+        @opaque_fields unquote(opaque_fields)
         @validated_fields unquote(validated_fields)
         @cast_embed_fields unquote(Macro.escape(cast_embed_fields))
 
@@ -491,6 +494,7 @@ defmodule Strukt do
       typespec_ast =
         Strukt.Typespec.generate(%Strukt.Typespec{
           caller: __MODULE__,
+          opaque: @opaque_fields,
           info: @validated_fields,
           fields: @cast_fields,
           embeds: @cast_embed_fields
