@@ -78,7 +78,7 @@ defmodule Strukt.Validation do
 
           :format ->
             cond do
-              Regex.regex?(data_or_opts) ->
+              is_struct(data_or_opts, Regex) ->
                 quote do
                   Ecto.Changeset.validate_format(
                     unquote(field),
