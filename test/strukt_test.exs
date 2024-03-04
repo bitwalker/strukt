@@ -295,6 +295,19 @@ defmodule Strukt.Test do
     refute is_nil(uuid)
   end
 
+  test "return error when passing wrong typed value to embeds_many field" do
+    {:error,
+     %Ecto.Changeset{
+       action: :insert,
+       changes: %{},
+       errors: [items: {"is invalid", [validation: :embed, type: {:array, :map}]}],
+       valid?: false
+     }} =
+      Fixtures.CustomFieldsWithEmbeddedSchema.new(%{
+        items: "iterms"
+      })
+  end
+
   test "parse custom fields with boolean value" do
     assert {:ok, %Strukt.Test.Fixtures.CustomFieldsWithBoolean{enabled: false, uuid: uuid}} =
              Fixtures.CustomFieldsWithBoolean.new(%{Enabled: false})
