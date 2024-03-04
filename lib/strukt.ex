@@ -565,7 +565,7 @@ defmodule Strukt do
                 # When we have a list of entities, we are overwriting the embeds with a new set
                 Ecto.Changeset.put_embed(changeset, field, Enum.map(entities, &Map.from_struct/1))
 
-              other when is_map(other) or is_list(other) ->
+              other ->
                 # For all other parameters, we need to cast. Depending on how the embedded entity is configured, this may raise an error
                 cast_embed(changeset, field)
             end

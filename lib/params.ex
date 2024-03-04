@@ -30,19 +30,22 @@ defmodule Strukt.Params do
     transform(module, params, struct)
   end
 
-  defp transform(module, params, nil = struct, cardinality: :many) do
+  defp transform(module, params, nil = struct, cardinality: :many) when is_list(params) do
     Enum.map(params, fn param ->
       transform(module, param, struct)
     end)
   end
 
-  defp transform(module, params, struct, cardinality: :many) do
+  defp transform(module, params, struct, cardinality: :many) when is_list(params) do
     params
     |> Enum.with_index()
     |> Enum.map(fn {param, index} ->
       transform(module, param, Enum.at(struct, index))
     end)
   end
+
+  # for delay the type error to casting
+  defp transform(_module, params, _struct, cardinality: :many), do: params
 
   defp transform_from_struct(module, params, struct) do
     struct
